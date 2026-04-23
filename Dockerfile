@@ -1,5 +1,5 @@
 # ===== Stage 1: Build the Rust server =====
-FROM rust:1.82-bookworm AS builder
+FROM rust:bookworm AS builder
 
 WORKDIR /app
 COPY . .
