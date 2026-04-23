@@ -1,208 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rust Execution Sandbox</title>
-    <!-- Use Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>HyperCompiler | Online IDE</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap"
+        rel="stylesheet" />
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
 
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#10131b",
+                        "on-surface": "#e0e2ee",
+                        "primary": "#b0c6ff",
+                        "secondary": "#4edea3",
+                        "error": "#ffb4ab",
+                        "outline": "#8c90a1",
+                        "surface-container": "#1c1f28",
+                        "surface-container-high": "#272a33",
+                        "surface-container-highest": "#32353e"
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        :root {
-            --bg-color: #0f111a;
-            --panel-bg: rgba(255, 255, 255, 0.03);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --accent: #5e6ad2;
-            --accent-hover: #737df0;
-            --text-main: #f0f0f6;
-            --text-muted: #8b92a5;
+        body {
+            background-color: #0b0e16;
+            color: #e0e2ee;
         }
 
-        body,
-        html {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
+        .crt-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 20;
         }
 
-        .navbar {
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            border-bottom: 1px solid var(--border-color);
-            background: rgba(15, 17, 26, 0.7);
-            backdrop-filter: blur(12px);
+        .neon-text-primary {
+            text-shadow: 0 0 5px #3b82f6, 0 0 10px #3b82f6;
         }
 
-        .brand {
-            font-weight: 600;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .glitch {
+            animation: glitch 1s linear infinite;
         }
 
-        .controls {
-            display: flex;
-            gap: 12px;
-            align-items: center;
+        @keyframes glitch {
+
+            2%,
+            64% {
+                transform: translate(2px, 0) skew(0deg);
+            }
+
+            4%,
+            60% {
+                transform: translate(-2px, 0) skew(0deg);
+            }
+
+            62% {
+                transform: translate(0, 0) skew(5deg);
+            }
         }
 
-        select {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-family: 'Inter';
-            font-size: 14px;
-            outline: none;
-            transition: all 0.2s;
+        /* Terminal / Editor overrides */
+        #terminal {
+            height: 100%;
         }
 
-        select:focus {
-            border-color: var(--accent);
+        #editor {
+            height: 100%;
         }
 
-        button {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 6px;
-            font-family: 'Inter';
-            font-weight: 500;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        button:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-        }
-
-        .layout {
-            display: flex;
-            height: calc(100vh - 60px);
-        }
-
-        .editor-container {
-            flex: 1;
-            position: relative;
-        }
-
-        .terminal-container {
-            width: 400px;
-            background: #090a10;
-            border-left: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .terminal-header {
-            padding: 12px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .terminal-output {
-            flex: 1;
-            padding: 16px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            line-height: 1.5;
-            overflow-y: auto;
-            color: #a9b2c3;
-        }
-
-        .terminal-input {
-            height: 30%;
-            background: transparent;
-            color: var(--text-main);
-            border: none;
-            padding: 16px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            resize: none;
-            outline: none;
-        }
-
-        .resizer {
-            width: 4px;
-            background: var(--border-color);
-            cursor: col-resize;
-            transition: background 0.2s;
-        }
-        .resizer:hover, .resizer.dragging {
-            background: var(--accent);
-        }
-
-        .header-flex {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .icon-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-        .icon-btn:hover {
-            color: var(--text-main);
-            background: rgba(255,255,255,0.1);
-        }
-        .icon-btn svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        .status-badge {
-            background: rgba(46, 160, 67, 0.15);
-            color: #3fb950;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-            display: none;
+        .monaco-editor,
+        .monaco-editor-background {
+            background-color: #050505 !important;
         }
 
         .loading {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
             border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
+            border-top-color: #3b82f6;
+            animation: spin 1s linear infinite;
             display: none;
         }
 
@@ -211,119 +101,241 @@
                 transform: rotate(360deg);
             }
         }
+
+        .status-badge {
+            font-family: 'JetBrains Mono';
+            font-size: 10px;
+            color: #4edea3;
+            text-transform: uppercase;
+            display: none;
+        }
     </style>
 </head>
 
-<body>
-
-    <div class="navbar">
-        <div class="brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
-            </svg>
-            HyperExecute
+<body class="h-screen w-screen overflow-hidden flex flex-col font-['Inter']">
+    <!-- Header -->
+    <header
+        class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#0A0A0A]/90 backdrop-blur-xl border-b border-blue-900/30 shadow-[0_0_20px_rgba(0,112,255,0.15)]">
+        <div class="flex items-center gap-4">
+            <span
+                class="text-2xl font-black text-blue-500 italic tracking-widest font-['JetBrains_Mono'] uppercase skew-x-[-10deg]">HyperCompiler</span>
+            <div id="status" class="status-badge ml-4">[ SAVED_TO_VAULT ]</div>
         </div>
-        <div class="controls">
-            <div id="status" class="status-badge">Saved</div>
-            <select id="languageSelect">
-                <option value="Python">Python</option>
-                <option value="JavaScript">Node.js</option>
-                <option value="Cpp">C++</option>
+
+        <nav class="hidden md:flex items-center gap-8 font-['JetBrains_Mono'] text-xs font-bold uppercase">
+            <select id="languageSelect"
+                class="bg-transparent text-blue-400 border-none outline-none cursor-pointer hover:text-blue-300">
+                <option value="Python">PYTHON_ENV</option>
+                <option value="JavaScript">NODE_JS_ENV</option>
+                <option value="Cpp">GCC_CPP_ENV</option>
             </select>
-            <button onclick="formatCode()" style="background: var(--panel-bg)" title="Auto-Format">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-            </button>
-            <button onclick="downloadCode()" style="background: var(--panel-bg)" title="Download File">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            </button>
-            <button onclick="saveCode()" style="background: var(--panel-bg)">Save Snippet</button>
-            <button onclick="executeCode()">
-                <div id="loading" class="loading"></div>
-                <span>Run Code</span>
-            </button>
-        </div>
-    </div>
+            <a href="/history.html" class="text-gray-500 hover:text-blue-400 transition-colors">LOG_HISTORY</a>
+        </nav>
 
-    <div class="layout" id="layout">
-        <div id="editor" class="editor-container"></div>
-        <div class="resizer" id="resizer"></div>
-        <div class="terminal-container" id="terminal-container">
-            <div class="header-flex">
-                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Standard Input (stdin)</div>
+        <div class="flex items-center gap-4 font-['JetBrains_Mono']">
+            <button onclick="saveCode()"
+                class="hidden lg:block border border-blue-500/50 text-blue-400 px-4 py-1.5 rounded hover:bg-blue-900/20 transition-all text-xs font-bold uppercase">
+                COMMIT_CHANGES
+            </button>
+            <div class="flex gap-2">
+                <button class="text-gray-600 hover:text-blue-400 p-2"><span
+                        class="material-symbols-outlined text-[20px]">terminal</span></button>
+                <button class="text-gray-600 hover:text-blue-400 p-2"><span
+                        class="material-symbols-outlined text-[20px]">skull</span></button>
             </div>
-            <textarea id="stdin" class="terminal-input" placeholder="Type your input here..."></textarea>
-            <div class="header-flex" style="border-top: 1px solid var(--border-color);">
-                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Execution Output</div>
-                <button class="icon-btn" onclick="copyOutput()" title="Copy Output">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        </div>
+    </header>
+
+    <div class="flex flex-1 pt-16 h-full w-full">
+        <!-- Sidebar -->
+        <aside class="hidden md:flex flex-col items-center py-4 bg-[#0A0A0A] w-20 border-r border-blue-900/20 h-full">
+            <nav class="flex flex-col w-full gap-2">
+                <button
+                    class="w-full py-4 flex flex-col items-center gap-1 bg-blue-600/10 text-blue-400 border-l-4 border-blue-500">
+                    <span class="material-symbols-outlined">folder_open</span>
+                    <span class="text-[9px] font-bold font-['JetBrains_Mono']">FILES</span>
                 </button>
+                <button
+                    class="w-full py-4 flex flex-col items-center gap-1 text-gray-600 hover:text-blue-400 hover:bg-blue-900/10">
+                    <span class="material-symbols-outlined">manage_search</span>
+                    <span class="text-[9px] font-bold font-['JetBrains_Mono']">SEARCH</span>
+                </button>
+                <button
+                    class="w-full py-4 flex flex-col items-center gap-1 text-gray-600 hover:text-blue-400 hover:bg-blue-900/10">
+                    <span class="material-symbols-outlined">hub</span>
+                    <span class="text-[9px] font-bold font-['JetBrains_Mono']">NODES</span>
+                </button>
+                <a href="/history.html"
+                    class="w-full py-4 flex flex-col items-center gap-1 text-gray-600 hover:text-blue-400 hover:bg-blue-900/10">
+                    <span class="material-symbols-outlined">history_edu</span>
+                    <span class="text-[9px] font-bold font-['JetBrains_Mono']">LOGS</span>
+                </a>
+            </nav>
+            <div class="mt-auto flex flex-col items-center pb-4 gap-4">
+                <div class="w-8 h-8 rounded bg-blue-900/20 border border-blue-500/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-blue-500 text-sm">person_off</span>
+                </div>
             </div>
-            <div id="terminal" class="terminal-output">Ready.</div>
-        </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col lg:flex-row p-6 gap-6 overflow-hidden relative bg-[#050505]">
+            <!-- Editor (Tilted) -->
+            <section
+                class="flex-1 flex flex-col bg-[#0A0A0A] border border-blue-900/30 rounded-lg transform -rotate-1 shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden relative z-10">
+                <div class="h-10 bg-[#111111] border-b border-blue-900/20 flex items-center px-4 justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-500 text-sm">description</span>
+                        <span class="font-['JetBrains_Mono'] text-xs text-blue-300"
+                            id="fileNameDisplay">MAIN_EXPLOIT.PY</span>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <div class="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/40"></div>
+                        <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/40"></div>
+                        <div class="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/40"></div>
+                    </div>
+                </div>
+                <div id="editor" class="flex-1"></div>
+            </section>
+
+            <!-- Right Column -->
+            <div class="w-full lg:w-[450px] flex flex-col gap-6 relative z-20">
+                <!-- Terminal (Tilted) -->
+                <section
+                    class="flex-1 flex flex-col bg-[#000] border border-green-900/30 rounded-lg transform rotate-1 shadow-2xl overflow-hidden relative">
+                    <div class="absolute inset-0 crt-overlay"></div>
+                    <div class="h-8 bg-[#0a0a0a] border-b border-green-900/20 flex items-center px-4">
+                        <span
+                            class="font-['JetBrains_Mono'] text-[10px] text-green-500/70 uppercase tracking-widest">SYS.STDOUT
+                            // BUFFER_STREAM</span>
+                    </div>
+                    <div id="terminal-wrapper" class="flex-1 relative p-2 overflow-hidden">
+                        <div id="terminal"></div>
+                        <div id="terminal-loading"
+                            class="absolute inset-0 bg-black flex items-center justify-center text-green-500 font-['JetBrains_Mono'] text-xs">
+                            [ INITIATING_STREAM... ]
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Execute Button -->
+                <div
+                    class="h-40 bg-[#0A0A0A] border border-red-900/30 rounded-lg p-6 flex items-center justify-center transform -rotate-2 relative shadow-lg">
+                    <div class="absolute inset-2 border border-dashed border-red-500/20 rounded pointer-events-none">
+                    </div>
+                    <button id="runBtn" onclick="executeCode()"
+                        class="group relative bg-red-600 text-white font-black text-2xl uppercase px-12 py-4 rounded border-b-[6px] border-red-900 active:border-b-0 active:translate-y-[6px] transition-all shadow-[0_0_20px_rgba(255,0,0,0.3)] flex items-center gap-4">
+                        <div id="loading" class="loading"></div>
+                        <span
+                            class="material-symbols-outlined text-[32px] group-active:animate-ping">priority_high</span>
+                        <span class="btn-text">EXECUTE</span>
+                    </button>
+                </div>
+            </div>
+        </main>
     </div>
 
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+
     <script>
-        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' } });
-        let editor;
+        let editor, term, socket;
+        let inputBuffer = '';
 
-        require(['vs/editor/editor.main'], function () {
-            editor = monaco.editor.create(document.getElementById('editor'), {
-                value: 'print("Hello world from the HyperExecute Cloud Environment!")',
-                language: 'python',
-                theme: 'vs-dark',
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 14,
-                minimap: { enabled: false },
-                padding: { top: 24 }
-            });
-
-            document.getElementById('languageSelect').addEventListener('change', (e) => {
-                const langMap = { 'Python': 'python', 'JavaScript': 'javascript', 'Cpp': 'cpp' };
-                monaco.editor.setModelLanguage(editor.getModel(), langMap[e.target.value]);
-            });
-        });
-
-        async function executeCode() {
-            const btnText = document.querySelector('button span');
-            const loader = document.getElementById('loading');
-            const terminal = document.getElementById('terminal');
-
-            btnText.style.display = 'none';
-            loader.style.display = 'inline-block';
-            terminal.innerHTML = '<span style="color: var(--text-muted)">Executing in isolated container...</span>';
-
+        function initTerminal() {
             try {
-                const res = await fetch('/execute', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        language: document.getElementById('languageSelect').value,
-                        code: editor.getValue(),
-                        input: document.getElementById('stdin').value
-                    })
+                const T = window.Terminal || (typeof Terminal !== 'undefined' ? Terminal : null);
+                if (!T) { setTimeout(initTerminal, 200); return; }
+
+                document.getElementById('terminal-loading').style.display = 'none';
+                term = new T({
+                    theme: { background: '#000000', foreground: '#4edea3', cursor: '#4edea3' },
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 11,
+                    cursorBlink: true,
+                    convertEol: true
                 });
+                term.open(document.getElementById('terminal'));
+                term.write('\x1b[1;32m[+] SYSTEM_READY. ESTABLISHING ENCRYPTED LINK...\x1b[0m\r\n');
 
-                const data = await res.json();
+                term.onData(data => {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        let sendData = data;
+                        if (data === '\r') {
+                            sendData = '\n';
+                            term.write('\r\n');
+                            inputBuffer = '';
+                        } else if (data === '\x7F') {
+                            if (inputBuffer.length > 0) {
+                                inputBuffer = inputBuffer.slice(0, -1);
+                                term.write('\b \b');
+                            } else return;
+                        } else {
+                            inputBuffer += data;
+                            term.write(data);
+                        }
+                        socket.send(sendData);
+                    }
+                });
+            } catch (e) { console.error(e); }
+        }
 
-                let out = '';
-                if (data.stdout) out += `<div>${data.stdout.replace(/\n/g, '<br>')}</div>`;
-                if (data.stderr) out += `<div style="color: #ff7b72">${data.stderr.replace(/\n/g, '<br>')}</div>`;
-                if (data.error) out += `<div style="color: #ff7b72">${data.error}</div>`;
-                out += `<br><div style="color: var(--text-muted); font-size: 11px">Exited with code ${data.exit_code} in ${data.time_taken_ms}ms</div>`;
+        function initMonaco() {
+            if (typeof require === 'undefined') { setTimeout(initMonaco, 200); return; }
+            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' } });
+            require(['vs/editor/editor.main'], function () {
+                editor = monaco.editor.create(document.getElementById('editor'), {
+                    value: 'name = input("TARGET_IDENTIFIER: ")\nprint(f"[+] BREACH_SUCCESSFUL. HELLO, {name}.")\n',
+                    language: 'python',
+                    theme: 'vs-dark',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 14,
+                    minimap: { enabled: false },
+                    padding: { top: 20 },
+                    automaticLayout: true
+                });
+                loadSnippetFromUrl();
+            });
+        }
 
-                terminal.innerHTML = out;
-            } catch (e) {
-                terminal.innerHTML = `<span style="color: #ff7b72">Network error: ${e.message}</span>`;
-            }
+        window.onload = () => { initTerminal(); initMonaco(); };
 
-            loader.style.display = 'none';
-            btnText.style.display = 'inline';
+        function executeCode() {
+            if (!editor || !term) return;
+            if (socket && socket.readyState === WebSocket.OPEN) { socket.close(); return; }
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/execute`;
+
+            socket = new WebSocket(wsUrl);
+            const runBtn = document.getElementById('runBtn');
+            const loader = document.getElementById('loading');
+            const btnSpan = runBtn.querySelector('.btn-text');
+
+            socket.onopen = () => {
+                inputBuffer = '';
+                term.clear();
+                term.write('\x1b[1;34m[!] INJECTING_PAYLOAD...\x1b[0m\r\n');
+                loader.style.display = 'inline-block';
+                btnSpan.innerText = 'ABORT';
+
+                socket.send(JSON.stringify({
+                    language: document.getElementById('languageSelect').value,
+                    code: editor.getValue()
+                }));
+            };
+
+            socket.onmessage = (event) => term.write(event.data);
+            socket.onclose = () => {
+                term.write('\r\n\x1b[1;33m[!] DISCONNECTED.\x1b[0m\r\n');
+                loader.style.display = 'none';
+                btnSpan.innerText = 'EXECUTE';
+            };
         }
 
         async function saveCode() {
+            if (!editor) return;
             const status = document.getElementById('status');
             try {
                 const res = await fetch('/save', {
@@ -331,110 +343,24 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         language: document.getElementById('languageSelect').value,
-                        code: editor.getValue(),
-                        input: document.getElementById('stdin').value
+                        code: editor.getValue()
                     })
                 });
                 const data = await res.json();
                 window.history.pushState({}, '', `/?id=${data.snippet_id}`);
-
-                status.innerText = 'Saved';
-                status.style.display = 'block';
-                setTimeout(() => status.style.display = 'none', 2000);
-            } catch (e) {
-                console.error(e);
-            }
+                status.style.display = 'inline-block';
+                setTimeout(() => status.style.display = 'none', 3000);
+            } catch (e) { console.error(e); }
         }
 
-        // Load snippet logic
-        window.addEventListener('DOMContentLoaded', async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('id')) {
-                try {
-                    const res = await fetch(`/load/${urlParams.get('id')}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        editor.setValue(data.code);
-                        if (data.stdin) document.getElementById('stdin').value = data.stdin;
-                        document.getElementById('languageSelect').value = data.language;
-                        // Need monaco to be loaded first normally, using interval fallback
-                        const checkM = setInterval(() => {
-                            if (monaco) {
-                                const langMap = { 'Python': 'python', 'JavaScript': 'javascript', 'Cpp': 'cpp' };
-                                monaco.editor.setModelLanguage(editor.getModel(), langMap[data.language]);
-                                clearInterval(checkM);
-                            }
-                        }, 100);
-                    }
-                } catch (e) { }
-            }
+        document.getElementById('languageSelect').addEventListener('change', (e) => {
+            if (!editor) return;
+            const langMap = { 'Python': 'python', 'JavaScript': 'javascript', 'Cpp': 'cpp' };
+            const lang = e.target.value;
+            monaco.editor.setModelLanguage(editor.getModel(), langMap[lang]);
+            document.getElementById('fileNameDisplay').innerText =
+                lang === 'Python' ? 'MAIN_EXPLOIT.PY' : (lang === 'JavaScript' ? 'WORM_CORE.JS' : 'BINARY_BREACH.CPP');
         });
-
-        // Resizer logic
-        const resizer = document.getElementById('resizer');
-        const terminalContainer = document.getElementById('terminal-container');
-        let isResizing = false;
-
-        resizer.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            resizer.classList.add('dragging');
-            document.body.style.cursor = 'col-resize';
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            const newWidth = window.innerWidth - e.clientX;
-            if (newWidth > 200 && newWidth < 800) {
-                terminalContainer.style.width = `${newWidth}px`;
-                editor.layout();
-            }
-        });
-
-        window.addEventListener('mouseup', () => {
-            isResizing = false;
-            resizer.classList.remove('dragging');
-            document.body.style.cursor = 'default';
-        });
-
-        // Auto Format
-        function formatCode() {
-            editor.getAction('editor.action.formatDocument').run();
-        }
-
-        // Copy Output
-        function copyOutput() {
-            const out = document.getElementById('terminal').innerText;
-            navigator.clipboard.writeText(out);
-            const status = document.getElementById('status');
-            status.innerText = 'Copied!';
-            status.style.display = 'block';
-            setTimeout(() => status.style.display = 'none', 2000);
-        }
-
-        // Download Code
-        function downloadCode() {
-            const code = editor.getValue();
-            const lang = document.getElementById('languageSelect').value;
-            const extensionMap = { 'Python': 'py', 'JavaScript': 'js', 'Cpp': 'cpp' };
-            const ext = extensionMap[lang] || 'txt';
-            const filename = `code.${ext}`;
-            
-            const blob = new Blob([code], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            const status = document.getElementById('status');
-            status.innerText = 'Downloaded!';
-            status.style.display = 'block';
-            setTimeout(() => status.style.display = 'none', 2000);
-        }
     </script>
 </body>
 

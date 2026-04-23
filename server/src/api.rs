@@ -1,5 +1,5 @@
 use axum::{
-    extract::{State, Path},
+    extract::{State, Path, ws::{WebSocket, WebSocketUpgrade, Message}},
     http::StatusCode,
     response::IntoResponse,
     Json,
@@ -122,6 +122,30 @@ pub async fn load_code(
         Err(e) => {
             tracing::error!("Failed to load snippet: {}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, Json(None))
+        }
+    }
+}
+
+pub async fn ws_execute(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_ws_execution(socket, state))
+}
+
+async fn handle_ws_execution(mut socket: WebSocket, state: AppState) {
+    if let Some(msg) = socket.recv().await {
+        if let Ok(Message::Text(text)) = msg {
+            if let Ok(payload) = serde_json::from_str::<ExecuteRequest>(&text) {
+                let job = ExecutionJob {
+                    job_id: Uuid::new_v4(),
+                    language: payload.language,
+                    code: payload.code,
+                    user_id: None,
+                    stdin: None,
+                };
+                let _ = state.queue_service.submit_and_stream(job, socket).await;
+            }
         }
     }
 }

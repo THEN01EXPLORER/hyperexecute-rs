@@ -1,6 +1,8 @@
 use anyhow::Result;
 use shared::models::{ExecutionJob, ExecutionResult};
 use std::time::Instant;
+use axum::extract::ws::{WebSocket, Message};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub struct QueueService;
 
@@ -144,5 +146,100 @@ impl QueueService {
         // Run the compiled binary
         let cmd_parts = vec![format!("./{}", exe_name)];
         self.execute_interpreted(&cmd_parts, job, start_time).await
+    }
+
+    pub async fn submit_and_stream(&self, job: ExecutionJob, mut socket: WebSocket) -> Result<()> {
+        let ext = job.language.file_extension();
+        let filename = format!("temp_{}.{}", job.job_id, ext);
+        tokio::fs::write(&filename, &job.code).await?;
+
+        let res = if ext == "cpp" {
+            let exe_name = format!("temp_{}.exe", job.job_id);
+            let compile = tokio::process::Command::new("g++")
+                .args(&["-O2", &filename, "-o", &exe_name])
+                .output()
+                .await?;
+            if !compile.status.success() {
+                let _ = socket.send(Message::Text(format!("Compilation Error:\r\n{}", String::from_utf8_lossy(&compile.stderr)))).await;
+                Ok(())
+            } else {
+                let cmd_parts = vec![format!("./{}", exe_name)];
+                self.stream_process(&cmd_parts, socket).await
+            }
+        } else {
+            let cmd_parts = job.language.execution_cmd(&filename);
+            self.stream_process(&cmd_parts, socket).await
+        };
+
+        // Cleanup
+        let _ = tokio::fs::remove_file(&filename).await;
+        if ext == "cpp" {
+            let _ = tokio::fs::remove_file(format!("temp_{}.exe", job.job_id)).await;
+        }
+        res
+    }
+
+    async fn stream_process(&self, cmd_parts: &[String], mut socket: WebSocket) -> Result<()> {
+        let mut cmd = tokio::process::Command::new(&cmd_parts[0]);
+        cmd.args(&cmd_parts[1..])
+           .stdout(std::process::Stdio::piped())
+           .stderr(std::process::Stdio::piped())
+           .stdin(std::process::Stdio::piped());
+
+        let mut child = cmd.spawn()?;
+        let mut stdout = child.stdout.take().unwrap();
+        let mut stderr = child.stderr.take().unwrap();
+        let mut stdin = child.stdin.take().unwrap();
+
+        let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(100);
+        
+        let tx_out = tx.clone();
+        tokio::spawn(async move {
+            let mut buf = [0u8; 1024];
+            while let Ok(n) = stdout.read(&mut buf).await {
+                if n == 0 { break; }
+                let _ = tx_out.send(String::from_utf8_lossy(&buf[..n]).to_string()).await;
+            }
+        });
+
+        let tx_err = tx.clone();
+        tokio::spawn(async move {
+            let mut buf = [0u8; 1024];
+            while let Ok(n) = stderr.read(&mut buf).await {
+                if n == 0 { break; }
+                let _ = tx_err.send(String::from_utf8_lossy(&buf[..n]).to_string()).await;
+            }
+        });
+
+        loop {
+            tokio::select! {
+                Some(output) = rx.recv() => {
+                    if socket.send(Message::Text(output)).await.is_err() {
+                        break;
+                    }
+                }
+                Some(msg) = socket.recv() => {
+                    match msg {
+                        Ok(Message::Text(text)) => {
+                            if stdin.write_all(text.as_bytes()).await.is_err() {
+                                break;
+                            }
+                            let _ = stdin.flush().await;
+                        }
+                        Ok(Message::Close(_)) | Err(_) => break,
+                        _ => {}
+                    }
+                }
+                status = child.wait() => {
+                    while let Ok(output) = rx.try_recv() {
+                        let _ = socket.send(Message::Text(output)).await;
+                    }
+                    let code = status.map(|s| s.code().unwrap_or(-1)).unwrap_or(-1);
+                    let _ = socket.send(Message::Text(format!("\r\n[Process exited with code {}]\r\n", code))).await;
+                    break;
+                }
+            }
+        }
+        Ok(())
     }
 }

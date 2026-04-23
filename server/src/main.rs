@@ -16,8 +16,8 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Starting HyperExecute Server...");
 
     // SQLite Setup
-    let db_url = "sqlite:snippets.db?mode=rwc";
-    let db_service = Arc::new(db::DbService::new(db_url).await?);
+    let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:snippets.db?mode=rwc".to_string());
+    let db_service = Arc::new(db::DbService::new(&db_url).await?);
     
     // In-process execution (no Redis/Worker needed)
     let queue_service = Arc::new(queue::QueueService::new());
@@ -26,6 +26,7 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/execute", post(api::execute_code))
+        .route("/ws/execute", get(api::ws_execute))
         .route("/save", post(api::save_code))
         .route("/load/:id", get(api::load_code))
         .route("/health", get(|| async { "OK" }))
@@ -33,7 +34,9 @@ async fn main() -> anyhow::Result<()> {
         .layer(CorsLayer::permissive())
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await?;
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+    let addr = format!("0.0.0.0:{}", port);
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("Listening on {}", listener.local_addr()?);
     
     axum::serve(listener, app).await?;

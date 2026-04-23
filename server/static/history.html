@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>HyperExecute - Run History</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#272a33",
+                        "inverse-primary": "#0058cb",
+                        "on-primary-fixed-variant": "#00429c",
+                        "primary": "#b0c6ff",
+                        "on-surface-variant": "#c2c6d8",
+                        "tertiary": "#ffb599",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#b0c6ff",
+                        "on-surface": "#e0e2ee",
+                        "secondary-container": "#00a572",
+                        "error": "#ffb4ab",
+                        "inverse-on-surface": "#2d3039",
+                        "surface-tint": "#b0c6ff",
+                        "surface-dim": "#10131b",
+                        "surface-container": "#1c1f28",
+                        "primary-fixed": "#d9e2ff",
+                        "on-error": "#690005",
+                        "surface-container-low": "#181b24",
+                        "on-primary": "#002d6f",
+                        "on-background": "#e0e2ee",
+                        "background": "#10131b",
+                        "tertiary-fixed": "#ffdbce",
+                        "on-tertiary-fixed": "#370e00",
+                        "on-tertiary": "#5a1c00",
+                        "surface": "#10131b",
+                        "on-secondary-fixed-variant": "#005236",
+                        "secondary-fixed": "#6ffbbe",
+                        "secondary": "#4edea3",
+                        "tertiary-container": "#f36420",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary": "#003824",
+                        "tertiary-fixed-dim": "#ffb599",
+                        "on-tertiary-fixed-variant": "#7f2b00",
+                        "outline": "#8c90a1",
+                        "surface-container-highest": "#32353e",
+                        "primary-container": "#568dff",
+                        "outline-variant": "#424655",
+                        "on-primary-fixed": "#001945",
+                        "on-primary-container": "#002661",
+                        "inverse-surface": "#e0e2ee",
+                        "surface-container-lowest": "#0b0e16",
+                        "on-tertiary-container": "#4f1700",
+                        "on-secondary-container": "#00311f",
+                        "secondary-fixed-dim": "#4edea3",
+                        "surface-variant": "#32353e",
+                        "on-secondary-fixed": "#002113",
+                        "surface-bright": "#363942"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "md": "16px",
+                        "unit": "4px",
+                        "gutter": "16px",
+                        "xl": "40px",
+                        "xs": "4px",
+                        "margin": "24px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "label": ["Inter"],
+                        "h1": ["Inter"],
+                        "display": ["Inter"],
+                        "h2": ["Inter"],
+                        "code": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label": ["12px", { "lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "h1": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "display": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "h2": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "code": ["13px", { "lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0A0A0A; color: #e0e2ee; }
+        .glass-panel { background: rgba(17, 17, 17, 0.7); backdrop-filter: blur(16px); border: 1px solid #222222; }
+        .glass-overlay { background: rgba(22, 22, 22, 0.8); backdrop-filter: blur(12px); border: 1px solid #333333; }
+        .code-block-bg { background-color: #050505; }
+    </style>
+</head>
+<body class="font-body-sm text-body-sm h-screen overflow-hidden flex flex-col">
+    <!-- TopNavBar -->
+    <nav class="bg-[#0A0A0A]/80 backdrop-blur-xl docked full-width top-0 border-b border-[#222222] shadow-[0_24px_40px_-15px_rgba(0,0,0,0.4)] flex justify-between items-center w-full px-6 h-14 z-50">
+        <div class="flex items-center gap-margin">
+            <span class="font-['JetBrains_Mono'] antialiased text-xl font-black tracking-tighter text-white">HyperExecute</span>
+        </div>
+        <div class="flex items-center gap-md">
+            <button class="text-gray-400 hover:text-white transition-colors active:scale-95"><span class="material-symbols-outlined text-[20px]">settings</span></button>
+            <button class="text-[#0070FF] transition-colors active:scale-95"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">history</span></button>
+            <div class="h-4 w-[1px] bg-[#222222] mx-sm"></div>
+            <a href="/" class="bg-[#0070FF] text-white rounded-DEFAULT px-md py-xs text-label font-label hover:brightness-110 transition-all shadow-[0_0_15px_rgba(0,112,255,0.3)]">Back to IDE</a>
+        </div>
+    </nav>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- SideNavBar -->
+        <aside class="bg-[#111111] fixed left-0 top-14 bottom-0 w-16 border-r border-[#222222] no-shadow flex flex-col justify-between h-[calc(100vh-3.5rem)] z-40">
+            <div class="flex flex-col items-center pt-md gap-sm">
+                <!-- Explorer -->
+                <a href="/" class="w-full text-gray-500 hover:text-gray-200 hover:bg-[#161616] transition-colors cursor-pointer flex flex-col items-center py-4 group relative" title="Explorer">
+                    <span class="material-symbols-outlined text-[24px]">folder_open</span>
+                </a>
+                <!-- Search -->
+                <button class="w-full text-gray-500 hover:text-gray-200 hover:bg-[#161616] transition-colors cursor-pointer flex flex-col items-center py-4 group relative" title="Search">
+                    <span class="material-symbols-outlined text-[24px]">search</span>
+                </button>
+                <!-- Git -->
+                <button class="w-full text-gray-500 hover:text-gray-200 hover:bg-[#161616] transition-colors cursor-pointer flex flex-col items-center py-4 group relative" title="Git">
+                    <span class="material-symbols-outlined text-[24px]">terminal</span>
+                </button>
+                <!-- History (Active) -->
+                <button class="w-full text-[#0070FF] bg-[#161616] border-l-2 border-[#0070FF] cursor-pointer flex flex-col items-center py-4 group relative" title="History">
+                    <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">history</span>
+                </button>
+            </div>
+            <div class="flex flex-col items-center pb-md">
+                <button class="w-full text-gray-500 hover:text-gray-200 hover:bg-[#161616] transition-colors cursor-pointer flex flex-col items-center py-4 group relative" title="Settings">
+                    <span class="material-symbols-outlined text-[24px]">settings</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area (History List) -->
+        <main class="flex-1 ml-16 flex flex-col h-full overflow-hidden bg-background">
+            <!-- Header & Search -->
+            <header class="px-xl py-margin border-b border-[#222222] bg-surface flex items-center justify-between z-10 shrink-0">
+                <div>
+                    <h1 class="font-h1 text-h1 text-on-surface">Run History</h1>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Past execution logs and output (Static Preview)</p>
+                </div>
+                <div class="relative w-72">
+                    <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+                    <input class="w-full bg-surface-container-high border border-[#222222] text-on-surface font-body-sm text-body-sm rounded-DEFAULT py-xs pl-xl pr-sm focus:outline-none focus:border-[#0070FF] focus:ring-1 focus:ring-[#0070FF] transition-all placeholder:text-outline" placeholder="Filter by language, status, or script..." type="text"/>
+                </div>
+            </header>
+
+            <!-- Scrollable List -->
+            <div class="flex-1 overflow-y-auto p-xl scrollbar-hide">
+                <div class="flex flex-col gap-md max-w-5xl mx-auto">
+                    <!-- History Item 1: Success (Python) -->
+                    <div class="glass-panel rounded-lg p-md hover:bg-[#161616] transition-colors group cursor-pointer flex flex-col gap-sm">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-sm">
+                                <span class="material-symbols-outlined text-primary text-[20px]">code</span>
+                                <span class="font-label text-label text-on-surface">Python 3.10</span>
+                                <span class="text-on-surface-variant text-xs">•</span>
+                                <span class="font-body-sm text-body-sm text-on-surface-variant">data_processor.py</span>
+                            </div>
+                            <div class="flex items-center gap-md">
+                                <span class="font-body-sm text-body-sm text-on-surface-variant">2 mins ago</span>
+                                <div class="px-sm py-xs rounded-DEFAULT bg-secondary-container/10 border border-secondary/20 flex items-center gap-xs">
+                                    <span class="material-symbols-outlined text-secondary text-[14px]">check_circle</span>
+                                    <span class="font-label text-label text-secondary">Success</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-block-bg rounded-DEFAULT p-sm border border-[#222222] font-code text-code text-on-surface-variant truncate relative">
+                            <span class="text-[#0070FF]">import</span> pandas <span class="text-[#0070FF]">as</span> pd; df = pd.read_csv(<span class="text-secondary">'data.csv'</span>); print(df.head())
+                            <button class="absolute right-sm top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-surface border border-[#333333] rounded px-xs py-[2px] text-xs hover:text-white">Copy</button>
+                        </div>
+                    </div>
+
+                    <!-- History Item 2: Error (JS) -->
+                    <div class="glass-panel rounded-lg p-md hover:bg-[#161616] transition-colors group cursor-pointer flex flex-col gap-sm border-l-2 border-l-error">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-sm">
+                                <span class="material-symbols-outlined text-[#F7DF1E] text-[20px]">javascript</span>
+                                <span class="font-label text-label text-on-surface">Node.js 18</span>
+                                <span class="text-on-surface-variant text-xs">•</span>
+                                <span class="font-body-sm text-body-sm text-on-surface-variant">api_worker.js</span>
+                            </div>
+                            <div class="flex items-center gap-md">
+                                <span class="font-body-sm text-body-sm text-on-surface-variant">15 mins ago</span>
+                                <div class="px-sm py-xs rounded-DEFAULT bg-error-container/10 border border-error/20 flex items-center gap-xs">
+                                    <span class="material-symbols-outlined text-error text-[14px]">error</span>
+                                    <span class="font-label text-label text-error">Failed</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-block-bg rounded-DEFAULT p-sm border border-[#222222] font-code text-code text-error truncate relative">
+                            TypeError: Cannot read properties of undefined (reading 'config') at Object.&lt;anonymous&gt; (/worker.js:14:22)
+                            <button class="absolute right-sm top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-surface border border-[#333333] rounded px-xs py-[2px] text-xs text-on-surface hover:text-white">Copy</button>
+                        </div>
+                    </div>
+
+                    <!-- History Item 3: Success (C++) -->
+                    <div class="glass-panel rounded-lg p-md hover:bg-[#161616] transition-colors group cursor-pointer flex flex-col gap-sm">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-sm">
+                                <span class="material-symbols-outlined text-[#00599C] text-[20px]">terminal</span>
+                                <span class="font-label text-label text-on-surface">C++20 (GCC)</span>
+                                <span class="text-on-surface-variant text-xs">•</span>
+                                <span class="font-body-sm text-body-sm text-on-surface-variant">engine_core.cpp</span>
+                            </div>
+                            <div class="flex items-center gap-md">
+                                <span class="font-body-sm text-body-sm text-on-surface-variant">1 hour ago</span>
+                                <div class="px-sm py-xs rounded-DEFAULT bg-secondary-container/10 border border-secondary/20 flex items-center gap-xs">
+                                    <span class="material-symbols-outlined text-secondary text-[14px]">check_circle</span>
+                                    <span class="font-label text-label text-secondary">Success</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-block-bg rounded-DEFAULT p-sm border border-[#222222] font-code text-code text-on-surface-variant truncate relative">
+                            <span class="text-[#0070FF]">#include</span> <span class="text-secondary">&lt;iostream&gt;</span>; <span class="text-[#0070FF]">int</span> main() { std::cout &lt;&lt; <span class="text-secondary">"Init complete"</span> &lt;&lt; std::endl; <span class="text-[#0070FF]">return</span> 0; }
+                             <button class="absolute right-sm top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-surface border border-[#333333] rounded px-xs py-[2px] text-xs hover:text-white">Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
