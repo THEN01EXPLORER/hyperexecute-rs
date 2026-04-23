@@ -23,7 +23,7 @@ RUN ln -sf /usr/bin/python3 /usr/bin/python
 WORKDIR /app
 
 # Copy the compiled binary from builder
-COPY --from=builder /app/target/release/server /app/server
+COPY --from=builder /app/target/release/server /app/server_bin
 
 # Copy static files
 COPY server/static /app/server/static
@@ -32,4 +32,4 @@ COPY server/static /app/server/static
 EXPOSE 8080
 
 # Run the server
-CMD ["./server"]
+CMD ["./server_bin"]
