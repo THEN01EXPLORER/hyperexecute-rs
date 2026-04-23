@@ -235,6 +235,9 @@
             <button onclick="formatCode()" style="background: var(--panel-bg)" title="Auto-Format">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
             </button>
+            <button onclick="downloadCode()" style="background: var(--panel-bg)" title="Download File">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </button>
             <button onclick="saveCode()" style="background: var(--panel-bg)">Save Snippet</button>
             <button onclick="executeCode()">
                 <div id="loading" class="loading"></div>
@@ -404,6 +407,31 @@
             navigator.clipboard.writeText(out);
             const status = document.getElementById('status');
             status.innerText = 'Copied!';
+            status.style.display = 'block';
+            setTimeout(() => status.style.display = 'none', 2000);
+        }
+
+        // Download Code
+        function downloadCode() {
+            const code = editor.getValue();
+            const lang = document.getElementById('languageSelect').value;
+            const extensionMap = { 'Python': 'py', 'JavaScript': 'js', 'Cpp': 'cpp' };
+            const ext = extensionMap[lang] || 'txt';
+            const filename = `code.${ext}`;
+            
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            const status = document.getElementById('status');
+            status.innerText = 'Downloaded!';
             status.style.display = 'block';
             setTimeout(() => status.style.display = 'none', 2000);
         }
