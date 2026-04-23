@@ -2,7 +2,6 @@
 
 A high-performance, interactive online compiler and code execution platform built with **Rust**. Featuring a high-fidelity cyberpunk "Digital Anarchy" interface, real-time terminal streaming via WebSockets, and a VS Code-grade editing experience.
 
-![HyperCompiler Banner](screenshot.png)
 
 ---
 
