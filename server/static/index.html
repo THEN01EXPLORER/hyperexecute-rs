@@ -146,6 +146,45 @@
             outline: none;
         }
 
+        .resizer {
+            width: 4px;
+            background: var(--border-color);
+            cursor: col-resize;
+            transition: background 0.2s;
+        }
+        .resizer:hover, .resizer.dragging {
+            background: var(--accent);
+        }
+
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .icon-btn:hover {
+            color: var(--text-main);
+            background: rgba(255,255,255,0.1);
+        }
+        .icon-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
         .status-badge {
             background: rgba(46, 160, 67, 0.15);
             color: #3fb950;
@@ -193,6 +232,9 @@
                 <option value="JavaScript">Node.js</option>
                 <option value="Cpp">C++</option>
             </select>
+            <button onclick="formatCode()" style="background: var(--panel-bg)" title="Auto-Format">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            </button>
             <button onclick="saveCode()" style="background: var(--panel-bg)">Save Snippet</button>
             <button onclick="executeCode()">
                 <div id="loading" class="loading"></div>
@@ -201,12 +243,20 @@
         </div>
     </div>
 
-    <div class="layout">
+    <div class="layout" id="layout">
         <div id="editor" class="editor-container"></div>
-        <div class="terminal-container">
-            <div class="terminal-header">Standard Input (stdin)</div>
+        <div class="resizer" id="resizer"></div>
+        <div class="terminal-container" id="terminal-container">
+            <div class="header-flex">
+                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Standard Input (stdin)</div>
+            </div>
             <textarea id="stdin" class="terminal-input" placeholder="Type your input here..."></textarea>
-            <div class="terminal-header" style="border-top: 1px solid var(--border-color);">Execution Output</div>
+            <div class="header-flex" style="border-top: 1px solid var(--border-color);">
+                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Execution Output</div>
+                <button class="icon-btn" onclick="copyOutput()" title="Copy Output">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+            </div>
             <div id="terminal" class="terminal-output">Ready.</div>
         </div>
     </div>
@@ -278,7 +328,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         language: document.getElementById('languageSelect').value,
-                        code: editor.getValue()
+                        code: editor.getValue(),
+                        input: document.getElementById('stdin').value
                     })
                 });
                 const data = await res.json();
@@ -301,6 +352,7 @@
                     if (res.ok) {
                         const data = await res.json();
                         editor.setValue(data.code);
+                        if (data.stdin) document.getElementById('stdin').value = data.stdin;
                         document.getElementById('languageSelect').value = data.language;
                         // Need monaco to be loaded first normally, using interval fallback
                         const checkM = setInterval(() => {
@@ -314,6 +366,47 @@
                 } catch (e) { }
             }
         });
+
+        // Resizer logic
+        const resizer = document.getElementById('resizer');
+        const terminalContainer = document.getElementById('terminal-container');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            resizer.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const newWidth = window.innerWidth - e.clientX;
+            if (newWidth > 200 && newWidth < 800) {
+                terminalContainer.style.width = `${newWidth}px`;
+                editor.layout();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isResizing = false;
+            resizer.classList.remove('dragging');
+            document.body.style.cursor = 'default';
+        });
+
+        // Auto Format
+        function formatCode() {
+            editor.getAction('editor.action.formatDocument').run();
+        }
+
+        // Copy Output
+        function copyOutput() {
+            const out = document.getElementById('terminal').innerText;
+            navigator.clipboard.writeText(out);
+            const status = document.getElementById('status');
+            status.innerText = 'Copied!';
+            status.style.display = 'block';
+            setTimeout(() => status.style.display = 'none', 2000);
+        }
     </script>
 </body>
 

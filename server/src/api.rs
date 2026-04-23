@@ -78,6 +78,7 @@ pub async fn execute_code(
 pub struct SaveRequest {
     language: Language,
     code: String,
+    input: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -94,6 +95,7 @@ pub async fn save_code(
         user_id: Uuid::nil(), // Anonymous user for now
         language: payload.language,
         code: payload.code,
+        stdin: payload.input,
         created_at: chrono::Utc::now(),
     };
 

@@ -20,9 +20,13 @@ impl DbService {
                 user_id TEXT NOT NULL,
                 language TEXT NOT NULL,
                 code TEXT NOT NULL,
+                stdin TEXT DEFAULT '',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )"
         ).execute(&pool).await?;
+
+        // Safely add stdin column if it doesn't exist
+        let _ = sqlx::query("ALTER TABLE code_snippets ADD COLUMN stdin TEXT").execute(&pool).await;
 
         sqlx::query(
             "CREATE TABLE IF NOT EXISTS job_queue (
@@ -100,13 +104,15 @@ impl DbService {
 
     pub async fn save_snippet(&self, snippet: &CodeSnippet) -> Result<()> {
         let lang = serde_json::to_string(&snippet.language).unwrap();
+        let stdin = snippet.stdin.clone().unwrap_or_default();
         sqlx::query(
-            "INSERT INTO code_snippets (id, user_id, language, code, created_at) VALUES (?, ?, ?, ?, ?)"
+            "INSERT INTO code_snippets (id, user_id, language, code, stdin, created_at) VALUES (?, ?, ?, ?, ?, ?)"
         )
         .bind(snippet.id.to_string())
         .bind(snippet.user_id.to_string())
         .bind(lang)
         .bind(&snippet.code)
+        .bind(stdin)
         .bind(snippet.created_at.to_string())
         .execute(&self.pool)
         .await?;
@@ -116,7 +122,7 @@ impl DbService {
     pub async fn get_snippet(&self, id: Uuid) -> Result<Option<CodeSnippet>> {
         let id_str = id.to_string();
         let record = sqlx::query(
-            "SELECT id, user_id, language, code, created_at FROM code_snippets WHERE id = ?"
+            "SELECT id, user_id, language, code, stdin, created_at FROM code_snippets WHERE id = ?"
         )
         .bind(id_str)
         .fetch_optional(&self.pool)
@@ -127,6 +133,7 @@ impl DbService {
             let r_id: String = r.try_get("id")?;
             let r_user_id: String = r.try_get("user_id")?;
             let r_code: String = r.try_get("code")?;
+            let r_stdin: Option<String> = r.try_get("stdin").ok();
             let r_created_at: String = r.try_get("created_at")?;
             
             let lang: shared::models::Language = serde_json::from_str(&r_language)?;
@@ -135,6 +142,7 @@ impl DbService {
                 user_id: Uuid::parse_str(&r_user_id)?,
                 language: lang,
                 code: r_code,
+                stdin: r_stdin,
                 created_at: r_created_at.parse().unwrap_or_default(),
             }))
         } else {

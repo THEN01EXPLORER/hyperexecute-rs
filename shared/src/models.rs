@@ -67,5 +67,6 @@ pub struct CodeSnippet {
     pub user_id: Uuid,
     pub language: Language,
     pub code: String,
+    pub stdin: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
