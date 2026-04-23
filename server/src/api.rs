@@ -22,6 +22,7 @@ pub struct AppState {
 pub struct ExecuteRequest {
     language: Language,
     code: String,
+    input: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -44,6 +45,7 @@ pub async fn execute_code(
         language: payload.language,
         code: payload.code,
         user_id: None,
+        stdin: payload.input,
     };
 
     match state.queue_service.submit_and_wait(job).await {

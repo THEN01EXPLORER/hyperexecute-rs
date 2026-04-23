@@ -134,6 +134,18 @@
             color: #a9b2c3;
         }
 
+        .terminal-input {
+            height: 30%;
+            background: transparent;
+            color: var(--text-main);
+            border: none;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            resize: none;
+            outline: none;
+        }
+
         .status-badge {
             background: rgba(46, 160, 67, 0.15);
             color: #3fb950;
@@ -192,7 +204,9 @@
     <div class="layout">
         <div id="editor" class="editor-container"></div>
         <div class="terminal-container">
-            <div class="terminal-header">Execution Output</div>
+            <div class="terminal-header">Standard Input (stdin)</div>
+            <textarea id="stdin" class="terminal-input" placeholder="Type your input here..."></textarea>
+            <div class="terminal-header" style="border-top: 1px solid var(--border-color);">Execution Output</div>
             <div id="terminal" class="terminal-output">Ready.</div>
         </div>
     </div>
@@ -234,7 +248,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         language: document.getElementById('languageSelect').value,
-                        code: editor.getValue()
+                        code: editor.getValue(),
+                        input: document.getElementById('stdin').value
                     })
                 });
 

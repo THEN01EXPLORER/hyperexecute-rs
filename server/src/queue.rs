@@ -48,11 +48,41 @@ impl QueueService {
         let program = &cmd_parts[0];
         let args = &cmd_parts[1..];
 
+        let mut cmd = tokio::process::Command::new(program);
+        cmd.args(args)
+           .stdout(std::process::Stdio::piped())
+           .stderr(std::process::Stdio::piped());
+
+        if job.stdin.is_some() {
+            cmd.stdin(std::process::Stdio::piped());
+        } else {
+            cmd.stdin(std::process::Stdio::null());
+        }
+
+        let mut child = match cmd.spawn() {
+            Ok(child) => child,
+            Err(e) => {
+                return Ok(ExecutionResult {
+                    job_id: job.job_id,
+                    stdout: "".to_string(),
+                    stderr: format!("Failed to spawn: {}", e),
+                    exit_code: -1,
+                    time_taken_ms: start_time.elapsed().as_millis() as u64,
+                    error: Some(format!("Process error: {}", e)),
+                });
+            }
+        };
+
+        if let Some(stdin_data) = &job.stdin {
+            if let Some(mut stdin) = child.stdin.take() {
+                use tokio::io::AsyncWriteExt;
+                let _ = stdin.write_all(stdin_data.as_bytes()).await;
+            }
+        }
+
         let output = tokio::time::timeout(
             std::time::Duration::from_secs(10),
-            tokio::process::Command::new(program)
-                .args(args)
-                .output(),
+            child.wait_with_output(),
         )
         .await;
 
@@ -70,7 +100,7 @@ impl QueueService {
             Ok(Err(e)) => Ok(ExecutionResult {
                 job_id: job.job_id,
                 stdout: "".to_string(),
-                stderr: format!("Failed to run: {}", e),
+                stderr: format!("Failed to wait: {}", e),
                 exit_code: -1,
                 time_taken_ms,
                 error: Some(format!("Process error: {}", e)),

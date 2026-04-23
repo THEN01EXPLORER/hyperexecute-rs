@@ -48,6 +48,7 @@ pub struct ExecutionJob {
     pub language: Language,
     pub code: String,
     pub user_id: Option<Uuid>, 
+    pub stdin: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
