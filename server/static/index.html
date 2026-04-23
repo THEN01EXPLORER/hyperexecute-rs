@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust Execution Sandbox</title>
+    <!-- Use Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #0f111a;
+            --panel-bg: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent: #5e6ad2;
+            --accent-hover: #737df0;
+            --text-main: #f0f0f6;
+            --text-muted: #8b92a5;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        .navbar {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(15, 17, 26, 0.7);
+            backdrop-filter: blur(12px);
+        }
+
+        .brand {
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        select {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: 'Inter';
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-family: 'Inter';
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .layout {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .editor-container {
+            flex: 1;
+            position: relative;
+        }
+
+        .terminal-container {
+            width: 400px;
+            background: #090a10;
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-header {
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .terminal-output {
+            flex: 1;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-y: auto;
+            color: #a9b2c3;
+        }
+
+        .status-badge {
+            background: rgba(46, 160, 67, 0.15);
+            color: #3fb950;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="navbar">
+        <div class="brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            HyperExecute
+        </div>
+        <div class="controls">
+            <div id="status" class="status-badge">Saved</div>
+            <select id="languageSelect">
+                <option value="Python">Python</option>
+                <option value="JavaScript">Node.js</option>
+                <option value="Cpp">C++</option>
+            </select>
+            <button onclick="saveCode()" style="background: var(--panel-bg)">Save Snippet</button>
+            <button onclick="executeCode()">
+                <div id="loading" class="loading"></div>
+                <span>Run Code</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="layout">
+        <div id="editor" class="editor-container"></div>
+        <div class="terminal-container">
+            <div class="terminal-header">Execution Output</div>
+            <div id="terminal" class="terminal-output">Ready.</div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' } });
+        let editor;
+
+        require(['vs/editor/editor.main'], function () {
+            editor = monaco.editor.create(document.getElementById('editor'), {
+                value: 'print("Hello world from the HyperExecute Cloud Environment!")',
+                language: 'python',
+                theme: 'vs-dark',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 14,
+                minimap: { enabled: false },
+                padding: { top: 24 }
+            });
+
+            document.getElementById('languageSelect').addEventListener('change', (e) => {
+                const langMap = { 'Python': 'python', 'JavaScript': 'javascript', 'Cpp': 'cpp' };
+                monaco.editor.setModelLanguage(editor.getModel(), langMap[e.target.value]);
+            });
+        });
+
+        async function executeCode() {
+            const btnText = document.querySelector('button span');
+            const loader = document.getElementById('loading');
+            const terminal = document.getElementById('terminal');
+
+            btnText.style.display = 'none';
+            loader.style.display = 'inline-block';
+            terminal.innerHTML = '<span style="color: var(--text-muted)">Executing in isolated container...</span>';
+
+            try {
+                const res = await fetch('/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        language: document.getElementById('languageSelect').value,
+                        code: editor.getValue()
+                    })
+                });
+
+                const data = await res.json();
+
+                let out = '';
+                if (data.stdout) out += `<div>${data.stdout.replace(/\n/g, '<br>')}</div>`;
+                if (data.stderr) out += `<div style="color: #ff7b72">${data.stderr.replace(/\n/g, '<br>')}</div>`;
+                if (data.error) out += `<div style="color: #ff7b72">${data.error}</div>`;
+                out += `<br><div style="color: var(--text-muted); font-size: 11px">Exited with code ${data.exit_code} in ${data.time_taken_ms}ms</div>`;
+
+                terminal.innerHTML = out;
+            } catch (e) {
+                terminal.innerHTML = `<span style="color: #ff7b72">Network error: ${e.message}</span>`;
+            }
+
+            loader.style.display = 'none';
+            btnText.style.display = 'inline';
+        }
+
+        async function saveCode() {
+            const status = document.getElementById('status');
+            try {
+                const res = await fetch('/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        language: document.getElementById('languageSelect').value,
+                        code: editor.getValue()
+                    })
+                });
+                const data = await res.json();
+                window.history.pushState({}, '', `/?id=${data.snippet_id}`);
+
+                status.innerText = 'Saved';
+                status.style.display = 'block';
+                setTimeout(() => status.style.display = 'none', 2000);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Load snippet logic
+        window.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('id')) {
+                try {
+                    const res = await fetch(`/load/${urlParams.get('id')}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        editor.setValue(data.code);
+                        document.getElementById('languageSelect').value = data.language;
+                        // Need monaco to be loaded first normally, using interval fallback
+                        const checkM = setInterval(() => {
+                            if (monaco) {
+                                const langMap = { 'Python': 'python', 'JavaScript': 'javascript', 'Cpp': 'cpp' };
+                                monaco.editor.setModelLanguage(editor.getModel(), langMap[data.language]);
+                                clearInterval(checkM);
+                            }
+                        }, 100);
+                    }
+                } catch (e) { }
+            }
+        });
+    </script>
+</body>
+
+</html>

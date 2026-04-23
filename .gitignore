@@ -1,0 +1,26 @@
+# Build artifacts
+/target/
+
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Temp execution files
+temp_*
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment
+.env
